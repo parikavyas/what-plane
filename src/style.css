@@ -34,3 +34,6 @@ dt { color: var(--muted); font-size: 0.8rem; }
 dd { margin: 0; }
 footer { margin-top: 24px; color: var(--muted); font-size: 0.8rem; }
 footer a { color: inherit; }
+.what { margin: 4px 0 0; font-weight: 600; }
+.route { margin: 2px 0 0; }
+.plane .type { font-size: 0.85rem; }
