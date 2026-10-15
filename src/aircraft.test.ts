@@ -15,7 +15,10 @@ describe("toSightings", () => {
     const out = toSightings(raw, viewer);
     expect(out.map((s) => s.id)).toEqual(["above", "far"]);
     expect(out[0].callsign).toBe("BAW123");
-    expect(out[0].typeName).toBe("AIRBUS A-320");
+    expect(out[0].typeName).toBe("Airbus A320");
+    expect(out[0].airline).toBe("British Airways");
+    expect(out[0].flightNumber).toBe("123");
+    expect(out[1].airline).toBeNull();
     expect(out[0].elevationDeg).toBeGreaterThan(80);
   });
 });

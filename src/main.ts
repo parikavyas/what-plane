@@ -1,6 +1,7 @@
 import { toSightings, type Sighting } from "./aircraft";
 import { fetchAircraft } from "./feed";
 import { compassPoint, type LatLon } from "./geo";
+import { formatRoute, RouteCache } from "./routes";
 
 const RADIUS_NM = 15;
 const REFRESH_MS = 10_000;
@@ -12,6 +13,8 @@ const locateBtn = document.querySelector<HTMLButtonElement>("#locate")!;
 
 let viewer: LatLon | null = null;
 let timer: number | undefined;
+let shown: Sighting[] = [];
+const routes = new RouteCache();
 
 function setStatus(text: string) {
   statusEl.textContent = text;
@@ -25,7 +28,8 @@ function card(s: Sighting, isTop: boolean): HTMLElement {
   const el = document.createElement("article");
   el.className = isTop ? "plane top" : "plane";
   const title = s.callsign ?? s.registration ?? s.id.toUpperCase();
-  const type = s.typeName ?? s.typeCode ?? "Unknown type";
+  const type = s.typeName ?? "Unknown type";
+  const route = s.callsign ? routes.get(s.callsign) : null;
   const climb =
     s.verticalRateFpm == null || Math.abs(s.verticalRateFpm) < 300
       ? "level"
@@ -35,6 +39,8 @@ function card(s: Sighting, isTop: boolean): HTMLElement {
   el.innerHTML = `
     ${isTop ? '<p class="badge">Most overhead</p>' : ""}
     <h2></h2>
+    <p class="what"></p>
+    ${route ? '<p class="route"></p>' : ""}
     <p class="type"></p>
     <dl>
       <div><dt>Look</dt><dd>${compassPoint(s.bearingDeg)}, ${Math.round(s.elevationDeg)}° up</dd></div>
@@ -44,7 +50,13 @@ function card(s: Sighting, isTop: boolean): HTMLElement {
     </dl>`;
   // Feed strings go in via textContent so they can't inject markup.
   el.querySelector("h2")!.textContent = title;
-  el.querySelector(".type")!.textContent = [type, s.operator, s.registration && s.registration !== title ? s.registration : null]
+  el.querySelector(".what")!.textContent = [s.airline ?? s.operator, type].filter(Boolean).join(" · ");
+  if (route) el.querySelector(".route")!.textContent = formatRoute(route);
+  el.querySelector(".type")!.textContent = [
+    s.airline && s.operator && s.operator !== s.airline ? `Operated by ${s.operator}` : null,
+    s.registration && s.registration !== title ? s.registration : null,
+    s.typeCode,
+  ]
     .filter(Boolean)
     .join(" · ");
   return el;
@@ -55,7 +67,9 @@ async function refresh() {
   try {
     const raw = await fetchAircraft(viewer, RADIUS_NM);
     const sightings = toSightings(raw, viewer).slice(0, MAX_SHOWN);
-    listEl.replaceChildren(...sightings.map((s, i) => card(s, i === 0)));
+    shown = sightings;
+    render();
+    void loadRoutes(sightings);
     setStatus(
       sightings.length
         ? `${sightings.length} plane${sightings.length === 1 ? "" : "s"} within ${RADIUS_NM} nm · updated ${new Date().toLocaleTimeString()}`
@@ -63,6 +77,22 @@ async function refresh() {
     );
   } catch (err) {
     setStatus(`Couldn't reach the flight feed (${(err as Error).message}). Retrying…`);
+  }
+}
+
+function render() {
+  listEl.replaceChildren(...shown.map((s, i) => card(s, i === 0)));
+}
+
+/** Look up routes for airline flights in the background and redraw when any arrive. */
+async function loadRoutes(sightings: Sighting[]) {
+  const queries = sightings
+    .filter((s) => s.callsign && s.flightNumber)
+    .map((s) => ({ callsign: s.callsign!, ...s.position }));
+  try {
+    if ((await routes.load(queries)) && sightings === shown) render();
+  } catch {
+    // Routes are a nice-to-have; the cards are still useful without them.
   }
 }
 
