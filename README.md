@@ -19,7 +19,9 @@ npm run build    # static site in dist/
 ```
 
 Browsers only share location over HTTPS or on localhost, so to try it on a
-phone deploy `dist/` to any static host (GitHub Pages, Netlify, Vercel).
+phone use the hosted copy at https://parikavyas.github.io/what-plane/. Every
+push to `main` redeploys it through `.github/workflows/deploy.yml` (repo
+Settings > Pages > Source must be set to "GitHub Actions").
 
 ## Layout
 
