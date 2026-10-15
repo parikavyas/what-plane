@@ -13,6 +13,10 @@
       <p id="status" role="status">Allow location to see planes above you.</p>
       <button id="locate" type="button">Find planes overhead</button>
     </header>
+    <section id="sky" hidden aria-label="Sky view">
+      <div id="radar"></div>
+      <button id="compass" type="button" class="secondary" aria-pressed="false" hidden>Turn with my phone</button>
+    </section>
     <main id="list" aria-live="polite"></main>
     <footer>
       Data from <a href="https://airplanes.live">airplanes.live</a> and
