@@ -1,7 +1,11 @@
 import { toSightings, type Sighting } from "./aircraft";
 import { fetchAircraft } from "./feed";
 import { compassPoint, type LatLon } from "./geo";
+
+import { updateSky } from "./sky";
+=======
 import { formatRoute, RouteCache } from "./routes";
+
 
 const RADIUS_NM = 15;
 const REFRESH_MS = 10_000;
@@ -67,9 +71,14 @@ async function refresh() {
   try {
     const raw = await fetchAircraft(viewer, RADIUS_NM);
     const sightings = toSightings(raw, viewer).slice(0, MAX_SHOWN);
+
+    listEl.replaceChildren(...sightings.map((s, i) => card(s, i === 0)));
+    updateSky(sightings, RADIUS_NM);
+=======
     shown = sightings;
     render();
     void loadRoutes(sightings);
+
     setStatus(
       sightings.length
         ? `${sightings.length} plane${sightings.length === 1 ? "" : "s"} within ${RADIUS_NM} nm · updated ${new Date().toLocaleTimeString()}`

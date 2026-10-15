@@ -34,6 +34,24 @@ dt { color: var(--muted); font-size: 0.8rem; }
 dd { margin: 0; }
 footer { margin-top: 24px; color: var(--muted); font-size: 0.8rem; }
 footer a { color: inherit; }
+
+#sky { margin-top: 12px; display: grid; justify-items: center; gap: 8px; }
+#radar { width: 100%; max-width: 360px; }
+.radar { display: block; width: 100%; height: auto; overflow: visible; }
+.radar-bg { fill: var(--surface); stroke: var(--border); }
+.radar-ring { fill: none; stroke: var(--border); stroke-dasharray: 3 4; }
+.radar-ring-label { fill: var(--muted); font-size: 9px; }
+.radar-cardinal { fill: var(--muted); font-size: 12px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+.radar-cardinal.north { fill: var(--accent); }
+.radar-you { fill: var(--text); }
+.radar-plane { fill: var(--muted); }
+.radar-plane.top { fill: var(--accent); }
+.radar-label { font-size: 10px; fill: var(--text); }
+.radar-plane.top .radar-label { font-weight: 700; }
+button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--border); padding: 8px 16px; }
+button:disabled { opacity: 0.6; cursor: default; }
+=======
 .what { margin: 4px 0 0; font-weight: 600; }
 .route { margin: 2px 0 0; }
 .plane .type { font-size: 0.85rem; }
+
