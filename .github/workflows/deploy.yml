@@ -22,6 +22,9 @@ jobs:
       - run: npm ci
       # Pages serves the site from /<repo>/, so assets need that base path.
       - run: npm run build -- --base=/${{ github.event.repository.name }}/
+        env:
+          # URL of the Cloudflare Worker in relay/ (repo Settings > Secrets and variables > Actions > Variables).
+          VITE_FEED_RELAY: ${{ vars.FEED_RELAY_URL }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

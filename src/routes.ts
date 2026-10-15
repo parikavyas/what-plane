@@ -3,8 +3,9 @@
 // ones adsb.lol marks as plausible for where the plane actually is.
 
 import type { LatLon } from "./geo";
+import { viaRelay } from "./relay";
 
-export const ROUTESET_URL = "https://api.adsb.lol/api/0/routeset";
+export const ROUTESET_URL = viaRelay("adsb.lol", "/api/0/routeset");
 
 export interface Airport {
   iata: string | null;
