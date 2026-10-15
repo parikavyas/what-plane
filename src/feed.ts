@@ -1,13 +1,12 @@
 // Flight data from community ADS-B aggregators. Both speak the readsb "v2" JSON
-// format, need no API key and send CORS headers, so the browser can call them directly.
+// format and need no API key, but neither sends CORS headers, so the hosted site
+// reaches them through the feed relay (see relay.ts).
 // airplanes.live asks for at most one request per second; we poll far slower than that.
 
 import type { LatLon } from "./geo";
+import { RELAY, viaRelay } from "./relay";
 
-export const FEEDS = [
-  "https://api.airplanes.live/v2/point",
-  "https://api.adsb.lol/v2/point",
-] as const;
+export const FEEDS = [viaRelay("airplanes.live", "/v2/point"), viaRelay("adsb.lol", "/v2/point")];
 
 /** Subset of the readsb aircraft record we use. Every field can be missing. */
 export interface RawAircraft {
@@ -49,6 +48,13 @@ export async function fetchAircraft(
     } catch (err) {
       lastError = err;
     }
+  }
+  // fetch() rejects with a TypeError ("Failed to fetch", "Load failed") when the
+  // browser blocks the response, which is what a missing relay looks like.
+  if (lastError instanceof TypeError) {
+    throw new Error(
+      RELAY ? "no connection to the feed relay, check your internet" : "the feeds block this site and no feed relay is set up",
+    );
   }
   throw lastError instanceof Error ? lastError : new Error("No flight feed reachable");
 }
