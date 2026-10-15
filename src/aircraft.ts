@@ -1,12 +1,16 @@
 import { bearingDeg, distanceM, elevationDeg, M_PER_NM, type LatLon } from "./geo";
 import type { RawAircraft } from "./feed";
+import { parseCallsign } from "./airlines";
+import { aircraftTypeName } from "./types";
 
 export interface Sighting {
   id: string;
   callsign: string | null;
   registration: string | null;
   typeCode: string | null;
-  typeName: string | null;
+  typeName: string | null; // plain words, e.g. "Airbus A321neo"
+  airline: string | null; // e.g. "Delta Air Lines", from the callsign
+  flightNumber: string | null; // e.g. "123" for DAL123
   operator: string | null;
   altitudeFt: number;
   speedKt: number | null;
@@ -15,6 +19,7 @@ export interface Sighting {
   distanceNm: number;
   bearingDeg: number;
   elevationDeg: number;
+  position: LatLon;
 }
 
 /** Turn raw feed records into sightings, nearest to overhead first. Drops grounded or position-less aircraft. */
@@ -26,12 +31,16 @@ export function toSightings(raw: RawAircraft[], viewer: LatLon): Sighting[] {
     if (ac.alt_baro === "ground" || alt == null) continue;
     const pos = { lat: ac.lat, lon: ac.lon };
     const dist = distanceM(viewer, pos);
+    const callsign = ac.flight?.trim() || null;
+    const flight = parseCallsign(callsign);
     out.push({
       id: ac.hex,
-      callsign: ac.flight?.trim() || null,
+      callsign,
       registration: ac.r ?? null,
       typeCode: ac.t ?? null,
-      typeName: ac.desc ?? null,
+      typeName: aircraftTypeName(ac.t ?? null, ac.desc ?? null),
+      airline: flight?.name ?? null,
+      flightNumber: flight ? flight.number : null,
       operator: ac.ownOp ?? null,
       altitudeFt: alt,
       speedKt: ac.gs ?? null,
@@ -40,6 +49,7 @@ export function toSightings(raw: RawAircraft[], viewer: LatLon): Sighting[] {
       distanceNm: dist / M_PER_NM,
       bearingDeg: bearingDeg(viewer, pos),
       elevationDeg: elevationDeg(dist, Math.max(0, alt)),
+      position: pos,
     });
   }
   // Highest in the sky is what you'd see when you look up.
