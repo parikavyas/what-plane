@@ -50,7 +50,6 @@ footer a { color: inherit; }
 .radar-plane.top .radar-label { font-weight: 700; }
 button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--border); padding: 8px 16px; }
 button:disabled { opacity: 0.6; cursor: default; }
-=======
 .what { margin: 4px 0 0; font-weight: 600; }
 .route { margin: 2px 0 0; }
 .plane .type { font-size: 0.85rem; }
