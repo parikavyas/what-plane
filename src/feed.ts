@@ -1,12 +1,8 @@
-// Flight data from community ADS-B aggregators. Both speak the readsb "v2" JSON
-// format and need no API key, but neither sends CORS headers, so the hosted site
-// reaches them through the feed relay (see relay.ts).
-// airplanes.live asks for at most one request per second; we poll far slower than that.
+// Live aircraft come from our own /api/aircraft function, which asks the community
+// ADS-B networks (adsb.lol, adsb.fi, airplanes.live). The browser can't call those
+// directly: they don't send CORS headers.
 
 import type { LatLon } from "./geo";
-import { RELAY, viaRelay } from "./relay";
-
-export const FEEDS = [viaRelay("airplanes.live", "/v2/point"), viaRelay("adsb.lol", "/v2/point")];
 
 /** Subset of the readsb aircraft record we use. Every field can be missing. */
 export interface RawAircraft {
@@ -23,38 +19,41 @@ export interface RawAircraft {
   baro_rate?: number; // ft/min
   lat?: number;
   lon?: number;
-  squawk?: string;
-  category?: string;
 }
 
 export interface FeedResponse {
   ac?: RawAircraft[];
-  now?: number;
+  source?: string;
+  stale?: boolean;
+  error?: string;
+}
+
+/** Same rounding the server uses, so phones near each other hit the same CDN cache entry. */
+const snap = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
+
+export function aircraftUrl(at: LatLon, radiusNm: number): string {
+  return `/api/aircraft?lat=${snap(at.lat)}&lon=${snap(at.lon)}&nm=${Math.round(radiusNm)}`;
 }
 
 export async function fetchAircraft(
   at: LatLon,
   radiusNm: number,
   fetchImpl: typeof fetch = fetch,
-): Promise<RawAircraft[]> {
-  const radius = Math.min(250, Math.max(1, Math.round(radiusNm)));
-  let lastError: unknown;
-  for (const base of FEEDS) {
-    try {
-      const res = await fetchImpl(`${base}/${at.lat.toFixed(4)}/${at.lon.toFixed(4)}/${radius}`);
-      if (!res.ok) throw new Error(`${base} answered ${res.status}`);
-      const body = (await res.json()) as FeedResponse;
-      return body.ac ?? [];
-    } catch (err) {
-      lastError = err;
-    }
+): Promise<FeedResponse & { ac: RawAircraft[] }> {
+  let res: Response;
+  try {
+    res = await fetchImpl(aircraftUrl(at, radiusNm));
+  } catch {
+    throw new Error("no internet connection");
   }
-  // fetch() rejects with a TypeError ("Failed to fetch", "Load failed") when the
-  // browser blocks the response, which is what a missing relay looks like.
-  if (lastError instanceof TypeError) {
-    throw new Error(
-      RELAY ? "no connection to the feed relay, check your internet" : "the feeds block this site and no feed relay is set up",
-    );
+  let body: FeedResponse = {};
+  try {
+    body = (await res.json()) as FeedResponse;
+  } catch {
+    // A non-JSON reply means the /api functions aren't running (for example a plain static host).
   }
-  throw lastError instanceof Error ? lastError : new Error("No flight feed reachable");
+  if (!res.ok || !Array.isArray(body.ac)) {
+    throw new Error(body.error ?? `the plane server answered ${res.status}`);
+  }
+  return { ...body, ac: body.ac };
 }

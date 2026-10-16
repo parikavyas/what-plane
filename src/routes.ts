@@ -1,11 +1,11 @@
 // Flight routes (origin and destination airports) from adsb.lol's free route
-// database, which is keyed by callsign. Routes are crowd-sourced, so we only show
-// ones adsb.lol marks as plausible for where the plane actually is.
+// database, which is keyed by callsign, fetched through our /api/routes function.
+// Routes are crowd-sourced, so we only show ones adsb.lol marks as plausible for
+// where the plane actually is.
 
 import type { LatLon } from "./geo";
-import { viaRelay } from "./relay";
 
-export const ROUTESET_URL = viaRelay("adsb.lol", "/api/0/routeset");
+export const ROUTESET_URL = "/api/routes";
 
 export interface Airport {
   iata: string | null;

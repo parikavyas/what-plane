@@ -24,14 +24,20 @@ describe("toSightings", () => {
 });
 
 describe("fetchAircraft", () => {
-  it("falls back to the second feed when the first fails", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(new Response("busy", { status: 429 }))
-      .mockResolvedValueOnce(Response.json({ ac: [{ hex: "abc" }] }));
-    const ac = await fetchAircraft(viewer, 15, fetchMock as unknown as typeof fetch);
-    expect(ac).toEqual([{ hex: "abc" }]);
-    expect(fetchMock.mock.calls[0][0]).toBe("https://api.airplanes.live/v2/point/51.4700/-0.4500/15");
-    expect(fetchMock.mock.calls[1][0]).toMatch(/^https:\/\/api\.adsb\.lol\//);
+  it("asks our own server with the position rounded to about 1 km", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ ac: [{ hex: "abc" }], source: "adsb.lol" }));
+    const out = await fetchAircraft({ lat: 51.4712, lon: -0.4549 }, 11, fetchMock as unknown as typeof fetch);
+    expect(out.ac).toEqual([{ hex: "abc" }]);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/aircraft?lat=51.47&lon=-0.45&nm=11");
+  });
+
+  it("passes on the server's explanation when it can't get planes", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ error: "Every flight feed is down or busy right now" }, { status: 503 }));
+    await expect(fetchAircraft(viewer, 11, fetchMock as unknown as typeof fetch)).rejects.toThrow(/down or busy/);
+  });
+
+  it("says when the phone is offline", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError("Load failed"));
+    await expect(fetchAircraft(viewer, 11, fetchMock as unknown as typeof fetch)).rejects.toThrow(/no internet/);
   });
 });
