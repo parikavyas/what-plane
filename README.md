@@ -1,61 +1,68 @@
 # What Plane
 
-Point your phone at the sky and see which plane is passing above you.
+Open it on your phone and see which planes are flying around and above you.
 
-The app asks for your location, pulls live aircraft within 15 nm from a free,
-keyless ADS-B feed ([airplanes.live](https://airplanes.live), falling back to
-[adsb.lol](https://adsb.lol)), and lists them by how high they are in your sky.
-Each card shows the callsign, the airline and aircraft type in plain words
-(for example "Delta Air Lines · Airbus A321neo"), the route when it's known
-("New York (JFK) → Los Angeles (LAX)", from adsb.lol's route database), where to look (compass
-direction and degrees above the horizon), distance, altitude and speed. It
-refreshes every 10 seconds and pauses when the tab is hidden.
+The app asks for your location and shows a street map (OpenStreetMap) with you at
+the centre, a 20 km ring, and every plane inside it as an arrow pointing the way
+it's flying. Above the map: where you are, your coordinates, which way your phone
+is facing (tap to turn on the compass) and the time. Below it, a folding "Nearby"
+list ranks the planes by how high they are in your sky. Each row shows the flight
+number, the airline and aircraft type, origin and destination, take-off and
+landing times (when FlightAware is set up), and where to look. It refreshes every
+10 seconds and pauses when the tab is hidden.
 
-Above the list, a sky view plots every plane on a radar around you (north up,
-distance as radius, arrows showing which way each is flying). On a phone, tap
-"Turn with my phone" and the radar rotates with your compass so the top is the
-way you're facing.
+## How the data flows
 
-## Run it
+Browsers can't read the flight feeds directly (they send no CORS headers), so the
+app talks only to its own small server functions in `api/`, which Vercel runs:
+
+- `GET /api/aircraft` asks adsb.lol, then adsb.fi, then airplanes.live for planes
+  near you. Like God's Eye View's proxy, it caches answers for a few seconds,
+  backs off from a feed that says "slow down", and serves the last good answer if
+  every feed is down.
+- `POST /api/routes` asks adsb.lol's route database for origin and destination.
+- `GET /api/flight` asks FlightAware AeroAPI for take-off and landing times. It
+  only works when the `FLIGHTAWARE_API_KEY` environment variable is set; without
+  it the rows simply show no times.
+- `GET /api/place` turns your coordinates into a place name with OpenStreetMap's
+  Nominatim.
+
+## Host it on Vercel
+
+1. Sign in at https://vercel.com with GitHub, choose Add New > Project, and
+   import this repository. Vercel detects Vite and the `api/` functions; keep
+   the defaults and deploy.
+2. Optional, for take-off and landing times: create a personal AeroAPI key at
+   https://www.flightaware.com/aeroapi/ and add it in the Vercel project under
+   Settings > Environment Variables as `FLIGHTAWARE_API_KEY`, then redeploy.
+
+Every push to `main` redeploys, and each pull request gets its own preview link.
+
+## Run it locally
 
 ```sh
 npm install
-npm run dev      # open the printed URL; on a phone use `npm run dev -- --host`
-npm test         # unit tests for the geometry and feed handling
+npx vercel dev   # runs the site and the api/ functions together
+npm test         # unit tests
 npm run build    # static site in dist/
 ```
 
-Browsers only share location over HTTPS or on localhost, so to try it on a
-phone use the hosted copy at https://parikavyas.github.io/what-plane/. Every
-push to `main` redeploys it through `.github/workflows/deploy.yml` (repo
-Settings > Pages > Source must be set to "GitHub Actions").
-
-## Feed relay
-
-The ADS-B feeds don't send CORS headers, so a browser on the hosted site can't
-read them directly ("Couldn't reach the flight feed"). `relay/worker.js` is a
-small Cloudflare Worker (free plan) that forwards only the requests the app
-makes and adds those headers. To set it up once:
-
-1. In the Cloudflare dashboard, go to Workers & Pages > Create > Create Worker,
-   name it `what-plane-relay`, deploy, then Edit code, paste in
-   `relay/worker.js` and deploy again.
-2. In this repo, add an Actions variable `FEED_RELAY_URL` set to the worker's
-   URL (for example `https://what-plane-relay.<you>.workers.dev`) under
-   Settings > Secrets and variables > Actions > Variables, then re-run the
-   "Deploy to GitHub Pages" workflow.
-
-For local development, put `VITE_FEED_RELAY=<worker URL>` in `.env.local`.
+Plain `npm run dev` serves the page but not the `api/` functions, so no planes load.
+Browsers only share location over HTTPS or on localhost.
 
 ## Layout
 
-- `src/geo.ts` distance, bearing and elevation-angle maths
-- `src/feed.ts` fetches aircraft from the ADS-B feeds
-- `src/relay.ts` points feed requests at the relay; `relay/worker.js` is the relay itself
+- `api/aircraft.ts`, `api/routes.ts`, `api/flight.ts`, `api/place.ts` the server functions
+- `api/_lib/feeds.ts` feed order, caching and back-off for live aircraft
+- `api/_lib/flight.ts` picks the airborne leg out of FlightAware's answer
+- `src/main.ts` location, polling, header and the Nearby list
+- `src/map.ts` the Leaflet street map with you and the planes
+- `src/compass.ts` which way the phone is facing
+- `src/feed.ts` asks `/api/aircraft` for planes
 - `src/aircraft.ts` turns raw records into sorted sightings
-- `src/radar.ts` radar geometry, compass heading and the SVG drawing
-- `src/sky.ts` puts the radar on the page and follows the phone's compass
+- `src/geo.ts` distance, bearing and elevation-angle maths
 - `src/airlines.ts` airline names from callsign prefixes (DAL123 is Delta)
 - `src/types.ts` plain names for aircraft type codes (B38M is a Boeing 737 MAX 8)
 - `src/routes.ts` looks up and caches flight routes
-- `src/main.ts` geolocation, polling and the UI
+- `src/flights.ts` looks up and caches take-off and landing times
+- `src/radar.ts` compass heading maths (and the older radar drawing)

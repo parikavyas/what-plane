@@ -2,26 +2,50 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b1220" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#eef1f4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1419" media="(prefers-color-scheme: dark)" />
     <title>What Plane</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <header>
-      <h1>What plane is that?</h1>
-      <p id="status" role="status">Allow location to see planes above you.</p>
-      <button id="locate" type="button">Find planes overhead</button>
-    </header>
-    <section id="sky" hidden aria-label="Sky view">
-      <div id="radar"></div>
-      <button id="compass" type="button" class="secondary" aria-pressed="false" hidden>Turn with my phone</button>
-    </section>
-    <main id="list" aria-live="polite"></main>
-    <footer>
-      Data from <a href="https://airplanes.live">airplanes.live</a> and
-      <a href="https://adsb.lol">adsb.lol</a>, community ADS-B networks. Not for navigation.
-    </footer>
+    <div class="wrap">
+      <header class="masthead">
+        <div class="where">
+          <h1 id="place">What plane is that?</h1>
+          <p id="coords" class="mono">Allow location to see the planes around you.</p>
+          <button id="facing" type="button" class="link mono" hidden>Show which way I'm facing</button>
+        </div>
+        <div class="when">
+          <p id="clock" class="clock"></p>
+          <p id="date" class="date"></p>
+        </div>
+      </header>
+
+      <button id="locate" type="button">Find planes around me</button>
+
+      <section id="map-panel" class="map-panel" hidden aria-label="Map of planes around you">
+        <div id="map"></div>
+        <p id="status" class="status" role="status"></p>
+      </section>
+
+      <details id="nearby" class="nearby" open hidden>
+        <summary><h2>Nearby</h2> <span id="count"></span></summary>
+        <ol id="list" aria-live="polite"></ol>
+      </details>
+
+      <footer>
+        Planes from <a href="https://adsb.lol">adsb.lol</a>, <a href="https://adsb.fi">adsb.fi</a> and
+        <a href="https://airplanes.live">airplanes.live</a>, community ADS-B networks. Times from
+        <a href="https://www.flightaware.com">FlightAware</a> when set up. Not for navigation.
+      </footer>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

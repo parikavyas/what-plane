@@ -1,56 +1,97 @@
+/* One phone-width column: header, map, folding list of nearby planes. */
 :root {
-  --bg: #f4f6fa;
-  --surface: #ffffff;
-  --text: #0b1220;
-  --muted: #5b6577;
-  --accent: #1f6feb;
-  --border: #dde3ec;
-  color-scheme: light dark;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bg: #eef1f4;
+  --panel: #ffffff;
+  --ink: #18212b;
+  --muted: #5d6b79;
+  --line: #d5dce3;
+  --accent: #1a6fd1;
+  --plane: #e4572e;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0b1220;
-    --surface: #141c2e;
-    --text: #e8edf6;
-    --muted: #93a0b8;
-    --accent: #58a6ff;
-    --border: #26314a;
+    --bg: #0f1419;
+    --panel: #182029;
+    --ink: #e6edf3;
+    --muted: #93a1af;
+    --line: #2b3642;
+    --accent: #5aa2ff;
+    --plane: #ff7a50;
+    color-scheme: dark;
   }
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); padding: 16px; max-width: 640px; margin-inline: auto; }
-h1 { font-size: 1.5rem; margin: 8px 0; }
-#status { color: var(--muted); margin: 0 0 12px; }
-button { font: inherit; padding: 12px 20px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; cursor: pointer; }
-main { display: grid; gap: 12px; margin-top: 12px; }
-.plane { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
-.plane.top { border: 2px solid var(--accent); }
-.plane h2 { margin: 0; font-size: 1.25rem; }
-.badge { margin: 0 0 4px; color: var(--accent); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-.type { margin: 2px 0 10px; color: var(--muted); }
-dl { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin: 0; }
-dt { color: var(--muted); font-size: 0.8rem; }
-dd { margin: 0; }
-footer { margin-top: 24px; color: var(--muted); font-size: 0.8rem; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); }
+.wrap {
+  max-width: 560px; margin: 0 auto; display: grid; gap: 14px;
+  padding-block: max(16px, env(safe-area-inset-top)) 32px;
+  padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right));
+}
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+button {
+  font: inherit; font-weight: 600; padding: 12px 20px; border-radius: 10px; border: 0;
+  background: var(--accent); color: #fff; cursor: pointer;
+}
+button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.link { background: none; color: var(--accent); padding: 0; font-weight: 500; font-size: 12.5px; border-radius: 0; text-align: left; }
+button.link:disabled { color: var(--muted); cursor: default; }
+
+.masthead { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
+.where { display: grid; gap: 3px; min-width: 0; }
+h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 1.05; text-wrap: balance; }
+#coords { margin: 0; font-size: 12.5px; color: var(--muted); }
+.when { text-align: right; }
+.clock { margin: 0; font-family: var(--display); font-weight: 600; font-size: 26px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.date { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+.map-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+#map { height: min(62vh, 420px); background: var(--line); }
+.status { margin: 0; padding: 8px 12px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); }
+.leaflet-container { font-family: var(--body); }
+.map-ring { fill: var(--accent); fill-opacity: 0.04; stroke: var(--accent); stroke-opacity: 0.6; stroke-width: 2; stroke-dasharray: 6 6; }
+.you-icon { position: relative; }
+.you-icon .you-dot, .you-icon .you-halo { position: absolute; left: 50%; top: 50%; border-radius: 50%; transform: translate(-50%, -50%); }
+.you-icon .you-dot { width: 12px; height: 12px; background: var(--accent); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--accent); }
+.you-icon .you-halo { width: 34px; height: 34px; border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
+.you-icon .you-cone { position: absolute; inset: 0; width: 80px; height: 80px; fill: var(--accent); opacity: 0.25; }
+.plane-icon { overflow: visible; }
+.plane-icon svg { width: 26px; height: 26px; fill: var(--plane); stroke: #fff; stroke-width: 1.2; display: block; }
+.plane-icon span {
+  position: absolute; left: 24px; top: 4px; white-space: nowrap; font-family: var(--mono); font-size: 11px; font-weight: 500;
+  color: #18212b; background: rgba(255, 255, 255, 0.85); padding: 0 3px; border-radius: 3px;
+}
+.plane-icon.top svg { fill: var(--accent); width: 30px; height: 30px; margin: -2px; }
+.plane-icon.top span { font-weight: 700; }
+
+.nearby { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.nearby summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 8px; padding: 12px 14px; border-radius: 12px; }
+.nearby summary::-webkit-details-marker { display: none; }
+.nearby summary::before { content: "▸"; color: var(--accent); display: inline-block; transition: transform 0.15s; }
+.nearby[open] summary::before { transform: rotate(90deg); }
+.nearby h2 { margin: 0; font-family: var(--display); font-weight: 600; font-size: 20px; }
+#count { color: var(--muted); font-size: 13px; }
+ol { list-style: none; margin: 0; padding: 0; }
+li { display: grid; grid-template-columns: 22px 1fr; gap: 4px 10px; padding: 12px 14px; border-top: 1px solid var(--line); transition: background 0.4s; }
+li > :not(.n) { grid-column: 2; min-width: 0; }
+li.picked { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+li .n { grid-row: 1 / span 3; font-family: var(--display); font-weight: 600; font-size: 18px; color: var(--muted); }
+li.top .n { color: var(--accent); }
+.head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.fn { font-family: var(--display); font-weight: 700; font-size: 19px; }
+.co { color: var(--muted); font-size: 13px; text-align: right; }
+.route { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+.route .to { text-align: right; }
+.code { font-family: var(--display); font-weight: 600; font-size: 18px; }
+.city { font-size: 12px; color: var(--muted); }
+.tm { font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+.arrow { color: var(--plane); font-size: 16px; }
+.look { font-size: 12px; color: var(--muted); }
+.look b { color: var(--ink); font-weight: 500; }
+
+footer { color: var(--muted); font-size: 12px; line-height: 1.5; }
 footer a { color: inherit; }
-
-#sky { margin-top: 12px; display: grid; justify-items: center; gap: 8px; }
-#radar { width: 100%; max-width: 360px; }
-.radar { display: block; width: 100%; height: auto; overflow: visible; }
-.radar-bg { fill: var(--surface); stroke: var(--border); }
-.radar-ring { fill: none; stroke: var(--border); stroke-dasharray: 3 4; }
-.radar-ring-label { fill: var(--muted); font-size: 9px; }
-.radar-cardinal { fill: var(--muted); font-size: 12px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
-.radar-cardinal.north { fill: var(--accent); }
-.radar-you { fill: var(--text); }
-.radar-plane { fill: var(--muted); }
-.radar-plane.top { fill: var(--accent); }
-.radar-label { font-size: 10px; fill: var(--text); }
-.radar-plane.top .radar-label { font-weight: 700; }
-button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--border); padding: 8px 16px; }
-button:disabled { opacity: 0.6; cursor: default; }
-.what { margin: 4px 0 0; font-weight: 600; }
-.route { margin: 2px 0 0; }
-.plane .type { font-size: 0.85rem; }
-
+@media (prefers-reduced-motion: reduce) { .nearby summary::before, li { transition: none; } }
